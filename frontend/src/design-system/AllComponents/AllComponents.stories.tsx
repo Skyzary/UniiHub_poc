@@ -10,6 +10,38 @@ import CheckBox from '../inputs/CheckBox/CheckBox'
 import RadioButton from '../inputs/RadioButton/RadioButton'
 import Chart from '../charts/Chart/Chart'
 import { SimpleForm } from '../SimpleForm/SimpleForm'
+import { GradeSimulator, GradeSimulatorTrigger } from '../../components/gamification/GradeSimulator'
+import type { Assignment, Grade } from '../../types'
+
+const mockGrades: Grade[] = [
+  { course_name: 'Математический анализ', grade: '92.00', rawgrade: 92 },
+  { course_name: 'Программирование', grade: '78.00', rawgrade: 78 },
+  { course_name: 'Физика', grade: '45.00', rawgrade: 45 },
+]
+
+const mockAssignments: Assignment[] = [
+  {
+    id: 1,
+    courseName: 'Математический анализ',
+    name: 'Экзаменационная контрольная работа',
+    duedate: Math.floor(Date.now() / 1000) + 86400 * 5,
+    description: '',
+  },
+  {
+    id: 2,
+    courseName: 'Математический анализ',
+    name: 'Индивидуальное домашнее задание 2',
+    duedate: Math.floor(Date.now() / 1000) + 86400 * 10,
+    description: '',
+  },
+  {
+    id: 3,
+    courseName: 'Программирование',
+    name: 'Финальный проект по курсу',
+    duedate: Math.floor(Date.now() / 1000) + 86400 * 3,
+    description: '',
+  },
+]
 
 const meta: Meta = {
   title: 'Slides/All Components',
@@ -28,6 +60,7 @@ const Labelled = ({ label, children }: { label: React.ReactNode; children: React
 export const All = () => {
   const [customDate, setCustomDate] = useState<Date | null>(new Date())
   const [simpleDate, setSimpleDate] = useState<Date | null>(new Date())
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
 
   return (
     <div
@@ -155,6 +188,19 @@ export const All = () => {
             { name: 'Просрочено', value: 2, color: 'var(--chart-danger)' },
             { name: 'В процессе', value: 5, color: 'var(--chart-info)' },
           ]}
+        />
+      </div>
+
+      <div>
+        <h2>Grade Simulator («Что, если?»)</h2>
+        <Labelled label="Нажмите для открытия симулятора">
+          <GradeSimulatorTrigger onOpen={() => setIsSimulatorOpen(true)} />
+        </Labelled>
+        <GradeSimulator
+          open={isSimulatorOpen}
+          onClose={() => setIsSimulatorOpen(false)}
+          grades={mockGrades}
+          assignments={mockAssignments}
         />
       </div>
 
