@@ -7,15 +7,19 @@ import { Modal } from './ui/Modal'
 import { Spinner } from './ui/Spinner'
 import { Tag } from './ui/Tag'
 import { useToast } from './ui/Toast'
+import { useGamificationStore } from '../store/useGamificationStore'
+import { BADGES } from '../gamification/badges'
 import styles from './AssignmentModal.module.scss'
 
 interface AssignmentModalProps {
   visible: boolean
   onClose: () => void
   module: CourseModule | null
+  /** Unix seconds deadline for DEADLINE_SNIPER unlock */
+  dueUnixSec?: number
 }
 
-const AssignmentModal: React.FC<AssignmentModalProps> = ({ visible, onClose, module }) => {
+const AssignmentModal: React.FC<AssignmentModalProps> = ({ visible, onClose, module, dueUnixSec }) => {
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [uploadingFile, setUploadingFile] = useState(false)
@@ -81,6 +85,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ visible, onClose, mod
 
       await moodleApi.submitAssignment(module.instance, text, fileItemId)
       toast.success('Решение успешно отправлено')
+      useGamificationStore.getState().triggerCelebration()
+
+      const nowSec = Math.floor(Date.now() / 1000)
+      if (dueUnixSec != null && dueUnixSec > 0 && nowSec <= dueUnixSec) {
+        if (useGamificationStore.getState().unlockBadge('DEADLINE_SNIPER')) {
+          toast.success(`Ачивка: ${BADGES.DEADLINE_SNIPER.title} — ${BADGES.DEADLINE_SNIPER.description}`)
+        }
+      }
+
       fetchStatus()
       setText('')
       setFiles([])
