@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Download } from 'lucide-react'
+import { Download, ExternalLink } from 'lucide-react'
 import { SimpleButton, FileInput, SimpleForm } from '../design-system'
 import { moodleApi } from '../services/api'
 import type { CourseModule } from '../types'
@@ -118,12 +118,29 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ visible, onClose, mod
           ? 'Нет попытки'
           : status?.status
 
+  const moodleUrl = module?.url || (module?.instance ? `https://moodle.karazin.ua/mod/assign/view.php?a=${module.instance}` : undefined)
+
   return (
     <Modal open={visible} onClose={onClose} title={module?.name || 'Задание'}>
       {loading ? (
         <Spinner tip="Загрузка статуса..." />
       ) : (
         <div className={styles.content}>
+          {moodleUrl && (
+            <div className={styles.moodleActionRow}>
+              <SimpleButton
+                isLink
+                href={moodleUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="secondary"
+                size="small"
+              >
+                <ExternalLink size={14} style={{ marginRight: 6 }} /> Открыть оригинальное задание на Moodle
+              </SimpleButton>
+            </div>
+          )}
+
           {module?.description && (
             <section>
               <h4>Описание</h4>
