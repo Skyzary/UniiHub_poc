@@ -16,8 +16,8 @@ export function getGradeTone(rawgrade: number | null): 'success' | 'warning' | '
 }
 
 export function getGradeBarColor(rawgrade: number | null): string {
-  if (rawgrade == null) return 'var(--warning-color)'
-  if (rawgrade >= 80) return 'var(--success-color)'
-  if (rawgrade >= 50) return 'var(--warning-color)'
-  return 'var(--error-color)'
+  if (rawgrade == null) return 'var(--chart-warning)'
+  if (rawgrade >= 80) return 'var(--chart-success)'
+  if (rawgrade >= 50) return 'var(--chart-warning)'
+  return 'var(--chart-danger)'
 }

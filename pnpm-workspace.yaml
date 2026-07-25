@@ -5,6 +5,7 @@ packages:
 allowBuilds:
   '@parcel/watcher': true
   '@scarf/scarf': true
+  esbuild: true
 
 minimumReleaseAgeExclude:
   - lucide-react@1.21.0

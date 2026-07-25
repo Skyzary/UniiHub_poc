@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from 'react'
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 import type { Assignment, Grade } from '../types'
 import { getValidGrades } from '../utils/grades'
-import { Empty } from './ui/Empty'
-import styles from './AssignmentsDonut.module.scss'
+import Chart from '../design-system/charts/Chart/Chart'
 
 type AssignmentsDonutProps = {
   assignments: Assignment[]
@@ -11,9 +9,9 @@ type AssignmentsDonutProps = {
 }
 
 const COLORS = {
-  done: 'var(--success-color)',
-  overdue: 'var(--error-color)',
-  inProgress: 'var(--info-color)',
+  done: 'var(--chart-success)',
+  overdue: 'var(--chart-danger)',
+  inProgress: 'var(--chart-info)',
 } as const
 
 export const AssignmentsDonut: React.FC<AssignmentsDonutProps> = ({ assignments, grades }) => {
@@ -49,44 +47,13 @@ export const AssignmentsDonut: React.FC<AssignmentsDonutProps> = ({ assignments,
     return result
   }, [assignments, grades, nowSec])
 
-  if (segments.length === 0) {
-    return <Empty description="Задания не найдены" />
-  }
-
   return (
-    <div className={styles.wrap}>
-      <h3 className={styles.title}>Статус заданий</h3>
-      <div className={styles.chart}>
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={segments}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={55}
-              outerRadius={80}
-              paddingAngle={2}
-            >
-              {segments.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                background: 'var(--bg-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--border-radius-medium)',
-                color: 'var(--text-primary)',
-              }}
-            />
-            <Legend
-              wrapperStyle={{ color: 'var(--text-secondary)', fontSize: 12 }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <Chart
+      type="donut"
+      title="Статус заданий"
+      data={segments}
+      height={260}
+      emptyDescription="Задания не найдены"
+    />
   )
 }
