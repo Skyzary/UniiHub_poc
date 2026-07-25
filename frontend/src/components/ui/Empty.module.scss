@@ -1,0 +1,10 @@
+.empty {
+  padding: var(--space-40) var(--space-16);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+}
+
+.empty p {
+  margin: 0;
+}
