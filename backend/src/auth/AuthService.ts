@@ -1,5 +1,5 @@
 import { writeFile } from "fs/promises";
-import logger from "../utils/logger.ts";
+import logger from "../utils/logger.js";
 export class AuthService {
   async getToken(username: string, password: string): Promise<string> {
     if (!username || !password) {

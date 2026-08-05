@@ -1,5 +1,5 @@
-import logger from "../utils/logger.ts";
-import { normalizeMoodleText, extractYear, extractSemester } from "../utils/moodleFilters.ts";
+import logger from "../utils/logger.js";
+import { normalizeMoodleText, extractYear, extractSemester } from "../utils/moodleFilters.js";
 
 export interface MoodleConfig {
   baseUrl: string;
