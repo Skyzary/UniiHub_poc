@@ -16,9 +16,18 @@ RUN rm -rf /usr/share/nginx/html/*
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx config (SPA + API proxy)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx template and entrypoint
+COPY nginx.conf.template /etc/nginx/conf.d/default.conf.template
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Install envsubst (gettext) for runtime template substitution
+RUN apk add --no-cache gettext
+
+# Provide sane defaults; override via Docker env or Railway variables
+ENV BACKEND_HOST=backend
+ENV BACKEND_PORT=3000
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/entrypoint.sh"]
