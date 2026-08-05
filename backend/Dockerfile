@@ -4,8 +4,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy manifests and install all deps for build
-COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps --silent
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
 
 # Copy source and build
 COPY . .
@@ -17,8 +17,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Copy production deps only
-COPY package.json package-lock.json ./
-RUN npm ci --production --legacy-peer-deps --silent
+COPY package*.json ./
+RUN npm install --production --legacy-peer-deps
 
 # Copy compiled output
 COPY --from=builder /app/dist ./dist
