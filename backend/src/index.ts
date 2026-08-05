@@ -10,6 +10,12 @@ import { swaggerSpec } from "./utils/swagger.js";
 
 const app = express();
 
+// Basic request logging for platform logs
+app.use((req, res, next) => {
+  logger.info({ method: req.method, url: req.url }, "incoming request");
+  next();
+});
+
 app.use(
   cors({
     origin: "*",
@@ -29,9 +35,13 @@ app.use(
     logger
   })
 );
+
 app.use(express.json({ limit: "50mb" }));
-logger.info("Server started");
+logger.info("Server starting");
 const authService = new AuthService();
+
+// Healthcheck for load balancers and quick debugging
+app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
 
 app.use("/login", authRouter);
 app.use("/moodle", moodleRouter);
