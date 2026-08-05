@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { AuthService } from "./AuthService.ts";
+import { AuthService } from "./AuthService.js";
 export const router = Router();
 const authService = new AuthService();
 
@@ -42,9 +42,13 @@ router.post("/", async (req, res) => {
     res.status(200).json({ token: data.token, userID: data.userId });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({ error: error.message });
+      // map known Moodle invalid login to 401
+      if (error.message === 'InvalidCredentials' || error.message.toLowerCase().includes('invalidlogin')) {
+        return res.status(401).json({ error: 'Invalid username or password' });
+      }
+      return res.status(500).json({ error: error.message });
     } else {
-      res.status(500).json({ error: "Internal Server Error" });
+      return res.status(500).json({ error: "Internal Server Error" });
     }
   }
 });

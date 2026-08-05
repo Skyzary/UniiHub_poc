@@ -1,12 +1,12 @@
 import express from "express";
 import cors from "cors";
-import logger from "./utils/logger.ts";
-import { AuthService } from "./auth/AuthService.ts";
+import logger from "./utils/logger.js";
+import { AuthService } from "./auth/AuthService.js";
 import pinoHttp from "pino-http";
-import { router as authRouter } from "./auth/authController.ts";
-import { moodleRouter } from "./moodle/moodleController.ts";
+import { router as authRouter } from "./auth/authController.js";
+import { moodleRouter } from "./moodle/moodleController.js";
 import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./utils/swagger.ts";
+import { swaggerSpec } from "./utils/swagger.js";
 
 const app = express();
 
@@ -23,8 +23,9 @@ app.use(
 // Handle preflight for all routes (Express 5 wildcard syntax)
 app.options("/{*path}", cors());
 
+const pinoMiddleware = pinoHttp as unknown as (opts: any) => any;
 app.use(
-  pinoHttp({
+  pinoMiddleware({
     logger
   })
 );
@@ -36,9 +37,10 @@ app.use("/login", authRouter);
 app.use("/moodle", moodleRouter);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.listen(3000, () => {
-  logger.info("Server started on port 3000");
+const port = process.env.PORT || 3000;
+app.listen(Number(port), () => {
+  logger.info(`Server started on port ${port}`);
   logger.info(
-    "Swagger documentation available at http://localhost:3000/api-docs"
+    `Swagger documentation available at http://localhost:${port}/api-docs`
   );
 });

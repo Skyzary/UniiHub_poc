@@ -5,8 +5,9 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "nodemon src/index.ts "
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "nodemon src/index.ts ",
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
