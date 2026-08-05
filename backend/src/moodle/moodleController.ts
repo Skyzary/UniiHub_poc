@@ -1,9 +1,9 @@
 import express from "express";
 import type { Request, Response } from "express";
-import { MoodleService } from "./MoodleService.ts";
-import logger from "../utils/logger.ts";
-import getData from "../utils/dataReader.ts";
-import { filterCourses, matchesYearAndSemester } from "../utils/moodleFilters.ts";
+import { MoodleService } from "./MoodleService.js";
+import logger from "../utils/logger.js";
+import getData from "../utils/dataReader.js";
+import { filterCourses, matchesYearAndSemester } from "../utils/moodleFilters.js";
 
 export const moodleRouter = express.Router();
 
