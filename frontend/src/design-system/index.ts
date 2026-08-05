@@ -9,3 +9,5 @@ export { default as CustomDateTime } from './inputs/CustomDateTime/CustomDateTim
 export { default as Chart } from './charts/Chart/Chart'
 export type { ChartProps, ChartDatum } from './charts/Chart/Chart'
 export { SimpleForm } from './SimpleForm/SimpleForm'
+export { default as SimpleSlider } from './inputs/SimpleSlider/SimpleSlider'
+export type { SimpleSliderProps } from './inputs/SimpleSlider/SimpleSlider'

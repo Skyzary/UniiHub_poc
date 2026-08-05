@@ -7,6 +7,7 @@ const config: StorybookConfig = {
   ],
   addons: ['@storybook/addon-docs', '@storybook/addon-a11y'],
   framework: '@storybook/react-vite',
+  tsconfig: '../tsconfig.storybook.json',
 }
 
 export default config

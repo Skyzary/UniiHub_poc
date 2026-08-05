@@ -7,7 +7,7 @@ import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { ProgressBar } from '../ui/ProgressBar'
 import { Empty } from '../ui/Empty'
-import { SimpleButton } from '../../design-system'
+import { SimpleButton, SimpleSlider } from '../../design-system'
 import styles from './GradeSimulator.module.scss'
 
 type GradeSimulatorProps = {
@@ -92,13 +92,11 @@ export const GradeSimulator: React.FC<GradeSimulatorProps> = ({
                       <span className={styles.name}>{a.name}</span>
                       <span className={styles.score}>{value}</span>
                     </div>
-                    <input
-                      className={styles.slider}
-                      type="range"
+                    <SimpleSlider
                       min={0}
                       max={100}
                       value={value}
-                      onChange={(e) => setScore(a.id, Number(e.target.value))}
+                      onChange={(val) => setScore(a.id, val)}
                     />
                   </label>
                 )

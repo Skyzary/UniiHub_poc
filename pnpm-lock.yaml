@@ -126,6 +126,9 @@ importers:
       '@storybook/react-vite':
         specifier: ^10.5.4
         version: 10.5.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(esbuild@0.28.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(storybook@10.5.4(@types/react@19.2.17)(prettier@3.8.4)(react@19.2.7))(typescript@6.0.3)(vite@8.0.16(@types/node@24.13.2)(esbuild@0.28.1)(sass@1.102.0))
+      '@storybook/types':
+        specifier: ^8.6.14
+        version: 8.6.14(storybook@10.5.4(@types/react@19.2.17)(prettier@3.8.4)(react@19.2.7))
       '@types/canvas-confetti':
         specifier: ^1.9.0
         version: 1.9.0
@@ -1120,6 +1123,11 @@ packages:
         optional: true
       typescript:
         optional: true
+
+  '@storybook/types@8.6.14':
+    resolution: {integrity: sha512-33kzHZa7h6/EygeLZDcm1PNRTlybokz8dzAh2JYjpETf77pG8jhPmEfrI2oHSAdgNeK7A3OMcGA/EwEN7EJdzw==}
+    peerDependencies:
+      storybook: ^8.2.0 || ^8.3.0-0 || ^8.4.0-0 || ^8.5.0-0 || ^8.6.0-0
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -3738,6 +3746,10 @@ snapshots:
       typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
+
+  '@storybook/types@8.6.14(storybook@10.5.4(@types/react@19.2.17)(prettier@3.8.4)(react@19.2.7))':
+    dependencies:
+      storybook: 10.5.4(@types/react@19.2.17)(prettier@3.8.4)(react@19.2.7)
 
   '@testing-library/dom@10.4.1':
     dependencies:
