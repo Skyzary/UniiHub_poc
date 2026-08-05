@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Download } from 'lucide-react'
+import { Download, ExternalLink } from 'lucide-react'
 import { SimpleButton, FileInput, SimpleForm } from '../design-system'
 import { moodleApi } from '../services/api'
 import type { CourseModule } from '../types'
@@ -7,15 +7,19 @@ import { Modal } from './ui/Modal'
 import { Spinner } from './ui/Spinner'
 import { Tag } from './ui/Tag'
 import { useToast } from './ui/Toast'
+import { useGamificationStore } from '../store/useGamificationStore'
+import { BADGES } from '../gamification/badges'
 import styles from './AssignmentModal.module.scss'
 
 interface AssignmentModalProps {
   visible: boolean
   onClose: () => void
   module: CourseModule | null
+  /** Unix seconds deadline for DEADLINE_SNIPER unlock */
+  dueUnixSec?: number
 }
 
-const AssignmentModal: React.FC<AssignmentModalProps> = ({ visible, onClose, module }) => {
+const AssignmentModal: React.FC<AssignmentModalProps> = ({ visible, onClose, module, dueUnixSec }) => {
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [uploadingFile, setUploadingFile] = useState(false)
@@ -81,6 +85,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ visible, onClose, mod
 
       await moodleApi.submitAssignment(module.instance, text, fileItemId)
       toast.success('Решение успешно отправлено')
+      useGamificationStore.getState().triggerCelebration()
+
+      const nowSec = Math.floor(Date.now() / 1000)
+      if (dueUnixSec != null && dueUnixSec > 0 && nowSec <= dueUnixSec) {
+        if (useGamificationStore.getState().unlockBadge('DEADLINE_SNIPER')) {
+          toast.success(`Ачивка: ${BADGES.DEADLINE_SNIPER.title} — ${BADGES.DEADLINE_SNIPER.description}`)
+        }
+      }
+
       fetchStatus()
       setText('')
       setFiles([])
@@ -105,12 +118,29 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ visible, onClose, mod
           ? 'Нет попытки'
           : status?.status
 
+  const moodleUrl = module?.url || (module?.instance ? `https://moodle.karazin.ua/mod/assign/view.php?a=${module.instance}` : undefined)
+
   return (
     <Modal open={visible} onClose={onClose} title={module?.name || 'Задание'}>
       {loading ? (
         <Spinner tip="Загрузка статуса..." />
       ) : (
         <div className={styles.content}>
+          {moodleUrl && (
+            <div className={styles.moodleActionRow}>
+              <SimpleButton
+                isLink
+                href={moodleUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="secondary"
+                size="small"
+              >
+                <ExternalLink size={14} style={{ marginRight: 6 }} /> Открыть оригинальное задание на Moodle
+              </SimpleButton>
+            </div>
+          )}
+
           {module?.description && (
             <section>
               <h4>Описание</h4>

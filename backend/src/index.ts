@@ -29,7 +29,6 @@ app.use(
 // Handle preflight for all routes (Express 5 wildcard syntax)
 app.options("/{*path}", cors());
 
-// pino-http middleware (cast for TypeScript compatibility)
 const pinoMiddleware = pinoHttp as unknown as (opts: any) => any;
 app.use(
   pinoMiddleware({
@@ -49,8 +48,9 @@ app.use("/moodle", moodleRouter);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const port = process.env.PORT || 3000;
-const host = process.env.HOST || "0.0.0.0";
-app.listen(Number(port), host, () => {
-  logger.info(`Server started on ${host}:${port}`);
-  logger.info(`Swagger documentation available at http://${host}:${port}/api-docs`);
+app.listen(Number(port), () => {
+  logger.info(`Server started on port ${port}`);
+  logger.info(
+    `Swagger documentation available at http://localhost:${port}/api-docs`
+  );
 });

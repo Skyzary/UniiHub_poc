@@ -1,11 +1,10 @@
-version: "3.8"
-
 services:
   backend:
     build:
       context: ./backend
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
+    restart: unless-stopped
 
   frontend:
     build:
@@ -14,3 +13,4 @@ services:
       - "7070:80"
     depends_on:
       - backend
+    restart: unless-stopped

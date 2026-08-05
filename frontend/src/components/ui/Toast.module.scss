@@ -17,7 +17,7 @@
   background: var(--bg-surface);
   color: var(--text-primary);
   font-size: var(--font-sm);
-  animation: slideIn 200ms ease;
+  animation: slideIn var(--transition-medium) var(--ease-standard);
 }
 
 .success {
@@ -35,10 +35,10 @@
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateX(16px) translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0) translateY(0);
   }
 }

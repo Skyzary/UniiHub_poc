@@ -9,16 +9,23 @@ export class AuthService {
       const response = await fetch(
         `https://moodle.karazin.ua/login/token.php?username=${username}&password=${password}&service=moodle_mobile_app`
       );
-      const data = await response.json();
+      const text = await response.text();
+      logger.info({ text }, 'getToken response body');
+      const data = JSON.parse(text || '{}');
+      // If Moodle reports invalid credentials, surface a clear error
+      if (data && data.errorcode === 'invalidlogin') {
+        throw new Error('InvalidCredentials');
+      }
+      if (!data.token) {
+        logger.error({ data }, 'getToken: no token in response');
+        throw new Error(`Moodle token fetch failed: ${JSON.stringify(data)}`);
+      }
       return data.token;
     } catch (error) {
       throw new Error("Failed to get token", { cause: error });
     }
   }
   async getUserId(token: string): Promise<string> {
-    if (!token) {
-      throw new Error("Username and password are required");
-    }
     if (!token) {
       throw new Error("Token is required");
     }

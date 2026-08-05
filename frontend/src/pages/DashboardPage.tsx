@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { motion } from 'framer-motion'
 import {
   LayoutDashboard,
   BookOpen,
@@ -11,6 +12,8 @@ import {
   CalendarDays,
   PanelLeftClose,
   PanelLeftOpen,
+  Volume2,
+  VolumeX,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { SimpleButton, SimpleInput, CheckBox } from '../design-system'
@@ -18,25 +21,51 @@ import { moodleApi } from '../services/api'
 import type { Course, Grade, Assignment, MoodleEvent, Notification, CourseStatistics, CourseModule } from '../types'
 import AssignmentModal from '../components/AssignmentModal'
 import ScheduleView from '../components/ScheduleView'
+import { GradesChart } from '../components/GradesChart'
+import { AssignmentsDonut } from '../components/AssignmentsDonut'
+import { DashboardSkeleton } from '../components/DashboardSkeleton'
+import { StreakBadge } from '../components/gamification/StreakBadge'
+import { ContextualGreeting } from '../components/gamification/ContextualGreeting'
+import { LiveCountdown } from '../components/gamification/LiveCountdown'
+import { BadgeSystem } from '../components/gamification/BadgeSystem'
+import { GradeSimulator, GradeSimulatorTrigger } from '../components/gamification/GradeSimulator'
 import { ThemeSwitcher } from '../theme/ThemeSwitcher'
 import { useToast } from '../components/ui/Toast'
 import { Spinner } from '../components/ui/Spinner'
 import { Tag } from '../components/ui/Tag'
 import { Empty } from '../components/ui/Empty'
 import { Select } from '../components/ui/Select'
+import { ProgressBar } from '../components/ui/ProgressBar'
+import { useCountUp } from '../hooks/useCountUp'
+import { useNow } from '../hooks/useNow'
+import { getValidGrades, getGradeTone } from '../utils/grades'
+import { useGamificationStore } from '../store/useGamificationStore'
+import { playClick } from '../utils/soundEffects'
 import styles from './DashboardPage.module.scss'
 
 type NavKey = 'overview' | 'courses' | 'grades' | 'assignments' | 'schedule' | 'events'
 
+const cardMotion = {
+  whileHover: { scale: 1.02, y: -2 },
+  whileTap: { scale: 0.98 },
+  transition: { duration: 0.15 },
+} as const
+
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate()
   const toast = useToast()
+  const checkIn = useGamificationStore((s) => s.checkIn)
+  const soundEnabled = useGamificationStore((s) => s.soundEnabled)
+  const setSoundEnabled = useGamificationStore((s) => s.setSoundEnabled)
 
   const [collapsed, setCollapsed] = useState(false)
   const [activeKey, setActiveKey] = useState<NavKey>('overview')
   const [loading, setLoading] = useState(true)
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const [simulatorOpen, setSimulatorOpen] = useState(false)
+  const [selectedDueUnixSec, setSelectedDueUnixSec] = useState<number | undefined>()
 
   const [data, setData] = useState<{
     courses: Course[]
@@ -64,6 +93,25 @@ const DashboardPage: React.FC = () => {
   const [isAssignmentModalVisible, setIsAssignmentModalVisible] = useState(false)
   const [selectedAssignmentModule, setSelectedAssignmentModule] = useState<CourseModule | null>(null)
 
+  const coursesCount = useCountUp(data.statistics?.total || 0, 800, !loading)
+  const assignmentsCount = useCountUp(data.assignments.length, 800, !loading)
+
+  const hasCachedData =
+    data.courses.length > 0 ||
+    data.grades.length > 0 ||
+    data.assignments.length > 0 ||
+    data.events.length > 0 ||
+    hasLoadedOnce
+
+  const nowMs = useNow(30_000)
+
+  const nearestDeadline = useMemo(() => {
+    const nowSec = Math.floor(nowMs / 1000)
+    return data.assignments
+      .filter((a) => a.duedate > nowSec)
+      .sort((a, b) => a.duedate - b.duedate)[0]
+  }, [data.assignments, nowMs])
+
   const fetchData = async () => {
     setLoading(true)
     try {
@@ -90,6 +138,7 @@ const DashboardPage: React.FC = () => {
         unreadCount: notificationsRes.data.unreadCount,
         statistics: statsRes.data,
       })
+      setHasLoadedOnce(true)
     } catch (error) {
       console.error(error)
       toast.error('Ошибка загрузки данных. Пожалуйста, убедитесь, что бэкенд запущен.')
@@ -101,6 +150,14 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (!localStorage.getItem('isLoggedIn')) {
       navigate('/login')
+      return
+    }
+    checkIn()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate])
+
+  useEffect(() => {
+    if (!localStorage.getItem('isLoggedIn')) {
       return
     }
     fetchData()
@@ -133,22 +190,34 @@ const DashboardPage: React.FC = () => {
 
   const renderOverview = () => (
     <div className={styles.stack}>
+      <div className={styles.overviewHero}>
+        <ContextualGreeting assignments={data.assignments} />
+        {nearestDeadline && (
+          <div className={styles.nearestDeadline}>
+            <span className={styles.muted}>Ближайший дедлайн: {nearestDeadline.name}</span>
+            <LiveCountdown targetUnixSec={nearestDeadline.duedate} />
+          </div>
+        )}
+      </div>
+
       <div className={styles.statGrid}>
-        <div className={styles.statCard}>
+        <div className={styles.statCard} style={{ animationDelay: '0ms' }}>
           <div className={styles.statLabel}>Всего курсов</div>
           <div className={styles.statValue}>
             <BookOpen size={20} />
-            {data.statistics?.total || 0}
+            {coursesCount}
           </div>
         </div>
-        <div className={styles.statCard}>
+        <div className={styles.statCard} style={{ animationDelay: '40ms' }}>
           <div className={styles.statLabel}>Заданий</div>
           <div className={styles.statValue}>
             <FileEdit size={20} />
-            {data.assignments.length}
+            {assignmentsCount}
           </div>
         </div>
       </div>
+
+      <AssignmentsDonut assignments={data.assignments} grades={data.grades} />
 
       <div className={styles.split}>
         <section className={styles.panel}>
@@ -160,8 +229,8 @@ const DashboardPage: React.FC = () => {
           </div>
           {data.courses.length > 0 ? (
             <div className={styles.list}>
-              {data.courses.slice(0, 3).map((course) => (
-                <div key={course.id} className={styles.listItem}>
+              {data.courses.slice(0, 3).map((course, index) => (
+                <div key={course.id} className={styles.listItem} style={{ animationDelay: `${index * 40}ms` }}>
                   <div className={styles.listTitle}>{course.fullname}</div>
                   <div className={styles.muted}>{course.shortname}</div>
                 </div>
@@ -181,8 +250,8 @@ const DashboardPage: React.FC = () => {
           </div>
           {data.events.length > 0 ? (
             <div className={styles.list}>
-              {data.events.slice(0, 4).map((event) => (
-                <div key={event.id} className={styles.listItem}>
+              {data.events.slice(0, 4).map((event, index) => (
+                <div key={event.id} className={styles.listItem} style={{ animationDelay: `${index * 40}ms` }}>
                   <div className={styles.listTitle}>
                     {event.url ? (
                       <a href={event.url} target="_blank" rel="noopener noreferrer">
@@ -207,11 +276,19 @@ const DashboardPage: React.FC = () => {
   const renderCourses = () =>
     data.courses.length > 0 ? (
       <div className={styles.courseGrid}>
-        {data.courses.map((course) => (
-          <article key={course.id} className={styles.courseCard}>
+        {data.courses.map((course, index) => (
+          <motion.article
+            key={course.id}
+            className={styles.courseCard}
+            style={{ animationDelay: `${index * 40}ms` }}
+            {...cardMotion}
+          >
             <div className={styles.courseCardHeader}>
               <h3>{course.fullname}</h3>
-              <Tag tone="info">{course.shortname}</Tag>
+              <span className={styles.courseTag}>
+                <BookOpen size={14} aria-hidden />
+                <Tag tone="info">{course.shortname}</Tag>
+              </span>
             </div>
             <p className={styles.courseSummary}>{course.summary || 'Нет описания'}</p>
             <SimpleButton
@@ -219,11 +296,14 @@ const DashboardPage: React.FC = () => {
               variant="secondary"
               size="small"
               isTransparent
-              onClick={() => navigate(`/courses/${course.id}/contents`)}
+              onClick={() => {
+                playClick(soundEnabled)
+                navigate(`/courses/${course.id}/contents`)
+              }}
             >
               Просмотр контента
             </SimpleButton>
-          </article>
+          </motion.article>
         ))}
       </div>
     ) : (
@@ -231,36 +311,46 @@ const DashboardPage: React.FC = () => {
     )
 
   const renderGrades = () => {
-    const validGrades = data.grades.filter((g) => {
-      const isZero = g.grade === '0' || g.grade === '0.00' || g.rawgrade === 0
-      const isEmpty = !g.grade || g.grade === '-'
-      return !isZero && !isEmpty
-    })
+    const validGrades = getValidGrades(data.grades)
 
     if (validGrades.length === 0) {
       return <Empty description="Оценки не найдены" />
     }
 
     return (
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Курс</th>
-              <th>Оценка</th>
-            </tr>
-          </thead>
-          <tbody>
-            {validGrades.map((g) => (
-              <tr key={g.course_name}>
-                <td>{g.course_name}</td>
-                <td>
-                  <Tag tone="success">{g.grade}</Tag>
-                </td>
+      <div className={styles.gradesStack}>
+        <div className={styles.pageTitleRow} style={{ marginBottom: 0 }}>
+          <span className={styles.muted}>Симулятор итогового балла</span>
+          <GradeSimulatorTrigger onOpen={() => setSimulatorOpen(true)} />
+        </div>
+        <GradesChart grades={data.grades} />
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Курс</th>
+                <th>Оценка</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {validGrades.map((g, index) => {
+                const tone = getGradeTone(g.rawgrade)
+                const barValue = g.rawgrade ?? (Number.parseFloat(g.grade) || 0)
+                return (
+                  <tr key={g.course_name} style={{ animationDelay: `${index * 40}ms` }}>
+                    <td>{g.course_name}</td>
+                    <td>
+                      <div className={styles.gradeCell}>
+                        <Tag tone={tone}>{g.grade}</Tag>
+                        <ProgressBar value={barValue} tone={tone} className={styles.gradeProgress} />
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     )
   }
@@ -302,11 +392,13 @@ const DashboardPage: React.FC = () => {
 
       {data.assignments.length > 0 ? (
         data.assignments.map((item) => (
-          <button
+          <motion.button
             key={item.id}
             type="button"
             className={styles.assignmentCard}
+            {...cardMotion}
             onClick={() => {
+              playClick(soundEnabled)
               setSelectedAssignmentModule({
                 id: item.id,
                 instance: item.id,
@@ -315,6 +407,7 @@ const DashboardPage: React.FC = () => {
                 description: item.description,
                 contents: [],
               })
+              setSelectedDueUnixSec(item.duedate)
               setIsAssignmentModalVisible(true)
             }}
           >
@@ -323,7 +416,10 @@ const DashboardPage: React.FC = () => {
                 <div className={styles.listTitle}>{item.name}</div>
                 <div className={styles.muted}>{item.courseName}</div>
               </div>
-              <Tag tone="warning">Срок: {new Date(item.duedate * 1000).toLocaleDateString()}</Tag>
+              <div className={styles.nearestDeadline}>
+                <Tag tone="warning">Срок: {new Date(item.duedate * 1000).toLocaleDateString()}</Tag>
+                {item.duedate > 0 && <LiveCountdown targetUnixSec={item.duedate} />}
+              </div>
             </div>
             <div
               className={styles.htmlSnippet}
@@ -334,7 +430,7 @@ const DashboardPage: React.FC = () => {
                     : item.description,
               }}
             />
-          </button>
+          </motion.button>
         ))
       ) : (
         <Empty description="Задания не найдены" />
@@ -391,6 +487,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className={`${styles.layout} ${collapsed ? styles.collapsed : ''}`}>
+      <BadgeSystem grades={data.grades} />
       <aside className={styles.sider}>
         <div className={styles.brand}>
           <span>{collapsed ? 'U' : 'UNiVerse'}</span>
@@ -412,9 +509,19 @@ const DashboardPage: React.FC = () => {
               key={item.key}
               type="button"
               className={`${styles.navItem} ${activeKey === item.key ? styles.active : ''}`}
-              onClick={() => setActiveKey(item.key)}
+              onClick={() => {
+                playClick(soundEnabled)
+                setActiveKey(item.key)
+              }}
               title={item.label}
             >
+              {activeKey === item.key && (
+                <motion.div
+                  layoutId="active-nav-pill"
+                  className={styles.activePill}
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
               {item.icon}
               {!collapsed && <span>{item.label}</span>}
             </button>
@@ -439,7 +546,20 @@ const DashboardPage: React.FC = () => {
 
       <div className={styles.main}>
         <header className={styles.header}>
+          <div className={styles.headerLeft}>
+            <StreakBadge />
+          </div>
           <div className={styles.headerRight}>
+            <SimpleButton
+              type="button"
+              variant="secondary"
+              size="medium"
+              isTransparent
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              aria-label={soundEnabled ? 'Выключить звук' : 'Включить звук'}
+            >
+              {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </SimpleButton>
             <div className={styles.notifWrap} ref={notifRef}>
               <SimpleButton
                 type="button"
@@ -453,7 +573,12 @@ const DashboardPage: React.FC = () => {
                 {data.unreadCount > 0 && <span className={styles.badge}>{data.unreadCount}</span>}
               </SimpleButton>
               {notifOpen && (
-                <div className={styles.notifDropdown}>
+                <motion.div
+                  className={styles.notifDropdown}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.15 }}
+                >
                   <div className={styles.notifHeader}>
                     <strong>Уведомления</strong>
                     {data.unreadCount > 0 && <Tag tone="info">{data.unreadCount} новых</Tag>}
@@ -481,7 +606,7 @@ const DashboardPage: React.FC = () => {
                       <Empty description="Нет уведомлений" />
                     )}
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
             <div className={styles.user}>
@@ -494,16 +619,45 @@ const DashboardPage: React.FC = () => {
         </header>
 
         <main className={styles.content}>
-          <h2 className={styles.pageTitle}>{menuItems.find((i) => i.key === activeKey)?.label}</h2>
-          {loading ? <Spinner size="large" tip="Загрузка данных..." /> : contentMap[activeKey]}
+          <div className={styles.pageTitleRow}>
+            <h2 className={styles.pageTitle}>{menuItems.find((i) => i.key === activeKey)?.label}</h2>
+          </div>
+          {loading && !hasCachedData ? (
+            <DashboardSkeleton />
+          ) : (
+            <>
+              {loading && hasCachedData && (
+                <div className={styles.contentLoading}>
+                  <Spinner size="small" tip="Обновление..." />
+                </div>
+              )}
+              <motion.div
+                key={activeKey}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {contentMap[activeKey]}
+              </motion.div>
+            </>
+          )}
 
           <AssignmentModal
             visible={isAssignmentModalVisible}
             onClose={() => {
               setIsAssignmentModalVisible(false)
               setSelectedAssignmentModule(null)
+              setSelectedDueUnixSec(undefined)
             }}
             module={selectedAssignmentModule}
+            dueUnixSec={selectedDueUnixSec}
+          />
+
+          <GradeSimulator
+            open={simulatorOpen}
+            onClose={() => setSimulatorOpen(false)}
+            grades={data.grades}
+            assignments={data.assignments}
           />
         </main>
       </div>
